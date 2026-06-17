@@ -14,6 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .app{max-width:390px;margin:0 auto;padding-bottom:80px}
 .topbar{padding:1rem 1rem 0.5rem;display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;position:sticky;top:0;z-index:10}
 .topbar h1{font-size:19px;font-weight:600;color:#1c1c1e;display:flex;align-items:center;gap:8px}
+.user-badge{display:flex;align-items:center;gap:6px;background:#e8f0fe;border-radius:99px;padding:4px 10px;font-size:12px;color:#185FA5;font-weight:600;cursor:pointer}
 .nav-tabs{display:flex;border-bottom:0.5px solid #d1d1d6;margin:0 0 0.75rem;background:#f5f5f7;position:sticky;top:52px;z-index:10}
 .tab{flex:1;padding:0.6rem;text-align:center;font-size:13px;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:#1c1c1e;font-weight:600;border-bottom:2px solid #1c1c1e}
@@ -65,6 +66,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .set-goal{font-size:13px;font-weight:600;color:#1c1c1e;margin-right:4px}
 .edit-btn{background:none;border:.5px solid #c7c7cc;border-radius:8px;padding:2px 8px;font-size:11px;color:#8e8e93;cursor:pointer}
 .del-btn{background:none;border:none;color:#ff3b30;cursor:pointer;padding:3px 6px;font-size:13px}
+
+/* login screen */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-card{background:#fff;border-radius:20px;padding:2rem 1.5rem;width:100%;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.08);text-align:center}
+.login-card h2{font-size:22px;font-weight:700;color:#1c1c1e;margin-bottom:6px}
+.login-card p{font-size:14px;color:#8e8e93;margin-bottom:1.5rem;line-height:1.5}
+.login-input{width:100%;padding:12px 14px;border:1px solid #d1d1d6;border-radius:12px;font-size:16px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:1rem;color:#1c1c1e}
+.login-btn{width:100%;padding:.75rem;background:#007aff;border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+.login-hint{margin-top:1rem;font-size:12px;color:#c7c7cc}
+
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:100}
 .modal-backdrop.open{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:1.25rem 1rem 2rem;width:100%;max-width:390px}
@@ -78,18 +89,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .loading{display:flex;align-items:center;justify-content:center;padding:2rem;color:#8e8e93;font-size:14px;gap:8px}
 .spinner{width:18px;height:18px;border:2px solid #e5e5ea;border-top-color:#007aff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:8px 18px;border-radius:99px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:8px 18px;border-radius:99px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- Login Screen -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div style="font-size:40px;margin-bottom:12px">📈</div>
+    <h2>DCA Tracker</h2>
+    <p>กรอก username ของคุณเพื่อเข้าสู่ข้อมูลส่วนตัว</p>
+    <input class="login-input" type="text" id="username-input" placeholder="username" autocomplete="off" autocapitalize="none">
+    <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-hint">ถ้ายังไม่เคยใช้ ระบบจะสร้างข้อมูลใหม่ให้อัตโนมัติ</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div class="app" id="main-app" style="display:none">
   <div class="topbar">
-    <h1>📈 DCA Tracker</h1>
-    <div class="month-nav" id="month-nav">
-      <button class="mnbtn" onclick="chMonth(-1)">‹</button>
-      <span class="month-label" id="mlabel"></span>
-      <button class="mnbtn" onclick="chMonth(1)">›</button>
+    <h1>📈 DCA</h1>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="month-nav" id="month-nav">
+        <button class="mnbtn" onclick="chMonth(-1)">‹</button>
+        <span class="month-label" id="mlabel"></span>
+        <button class="mnbtn" onclick="chMonth(1)">›</button>
+      </div>
+      <div class="user-badge" onclick="doLogout()" title="กดเพื่อออกจากระบบ">
+        <span id="user-label"></span>
+        <span style="font-size:10px">✕</span>
+      </div>
     </div>
   </div>
   <div class="nav-tabs">
@@ -209,9 +240,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://gmgtocqfuhjgnqgytfkq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZ3RvY3FmdWhqZ25xZ3l0ZmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NTU1MTAsImV4cCI6MjA5NzIzMTUxMH0.YUAtIrbfnEJQ-b-mFId4vni-bzByxo8KCcUqXU9mEkA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL='https://gmgtocqfuhjgnqgytfkq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZ3RvY3FmdWhqZ25xZ3l0ZmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NTU1MTAsImV4cCI6MjA5NzIzMTUxMH0.YUAtIrbfnEJQ-b-mFId4vni-bzByxo8KCcUqXU9mEkA';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const ICONS={stock:'📈',fund:'🏦',gold:'🥇'};
@@ -220,34 +251,55 @@ const BAR={stock:'#007aff',fund:'#34c759',gold:'#ff9500'};
 const DOTC={stock:'#007aff',fund:'#34c759',gold:'#ff9500'};
 
 const now=new Date();
-let cy=now.getFullYear(), cm=now.getMonth();
+let cy=now.getFullYear(),cm=now.getMonth();
 let editAssetId=null;
+let currentUser=null;
 let S={budget:15000,stockBudget:5000,assets:[],logs:[]};
 
 function showToast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
+  t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
 }
 
+// ---- LOGIN ----
+function doLogin(){
+  const val=document.getElementById('username-input').value.trim().toLowerCase();
+  if(!val){showToast('กรุณากรอก username');return;}
+  currentUser=val;
+  localStorage.setItem('dca_user',val);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('user-label').textContent=val;
+  loadAll();
+}
+
+function doLogout(){
+  if(!confirm('ออกจากระบบ?')) return;
+  currentUser=null;
+  localStorage.removeItem('dca_user');
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('username-input').value='';
+}
+
+// ---- LOAD ----
 async function loadAll(){
-  const [{data:sets},{data:assets},{data:logs}] = await Promise.all([
-    sb.from('settings').select('*').eq('id','main').single(),
-    sb.from('assets').select('*').order('id'),
-    sb.from('logs').select('*').order('created_at',{ascending:false})
+  document.getElementById('assets-list').innerHTML='<div class="loading"><div class="spinner"></div> กำลังโหลด...</div>';
+  const [{data:sets},{data:assets},{data:logs}]=await Promise.all([
+    sb.from('settings').select('*').eq('id',currentUser).maybeSingle(),
+    sb.from('assets').select('*').eq('username',currentUser).order('id'),
+    sb.from('logs').select('*').eq('username',currentUser).order('created_at',{ascending:false})
   ]);
   if(sets){S.budget=sets.budget;S.stockBudget=sets.stock_budget;}
+  else{S.budget=15000;S.stockBudget=5000;}
   S.assets=assets||[];
   S.logs=logs||[];
   render();
 }
 
-function investedStock(y,m){
-  return S.logs.filter(l=>l.asset_id==='stock'&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);
-}
-function invested(aid,y,m){
-  return S.logs.filter(l=>l.asset_id==aid&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);
-}
+function investedStock(y,m){return S.logs.filter(l=>l.asset_id==='stock'&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);}
+function invested(aid,y,m){return S.logs.filter(l=>l.asset_id==aid&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);}
 
 function renderCheck(){
   const fundTotal=S.assets.filter(a=>a.type==='fund').reduce((s,a)=>s+a.goal,0);
@@ -294,8 +346,6 @@ function renderHome(){
   const el=document.getElementById('assets-list');
   el.innerHTML='';
   let ti=0;
-
-  // หุ้นรายตัว
   const stockInv=investedStock(cy,cm);
   ti+=stockInv;
   const spct=Math.min(Math.round(stockInv/S.stockBudget*100),100);
@@ -306,8 +356,7 @@ function renderHome(){
   sc.className='acard';
   sc.innerHTML=`
     <div class="ahead">
-      <div class="aname">
-        <div class="aicon stock">📈</div>
+      <div class="aname"><div class="aicon stock">📈</div>
         <div><div class="atitle">หุ้นรายตัว</div><div class="asub">${tickers||'ยังไม่มีรายการ'}</div></div>
       </div>
       ${sDone?`<span class="badge-done">✓ ครบ</span>`:`<span style="font-size:13px;color:#8e8e93">${spct}%</span>`}
@@ -326,8 +375,7 @@ function renderHome(){
     d.className='acard';
     d.innerHTML=`
       <div class="ahead">
-        <div class="aname">
-          <div class="aicon ${a.type}">${ICONS[a.type]}</div>
+        <div class="aname"><div class="aicon ${a.type}">${ICONS[a.type]}</div>
           <div><div class="atitle">${a.name}</div><div class="asub">${TLAB[a.type]}</div></div>
         </div>
         ${done?`<span class="badge-done">✓ ครบ</span>`:`<span style="font-size:13px;color:#8e8e93">${pct}%</span>`}
@@ -376,12 +424,8 @@ function renderLog(){
 function render(){renderHome();renderLog();renderSettings();}
 
 function showTab(t){
-  ['home','log','settings'].forEach(x=>{
-    document.getElementById('tab-'+x).style.display=x===t?'block':'none';
-  });
-  document.querySelectorAll('.tab').forEach((el,i)=>{
-    el.classList.toggle('active',['home','log','settings'][i]===t);
-  });
+  ['home','log','settings'].forEach(x=>{document.getElementById('tab-'+x).style.display=x===t?'block':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['home','log','settings'][i]===t);});
   document.getElementById('month-nav').style.visibility=t==='settings'?'hidden':'visible';
 }
 function chMonth(d){
@@ -412,7 +456,7 @@ async function saveLog(){
   const note=document.getElementById('l-note').value.trim();
   const dd=new Date();
   const dateStr=`${cy}-${String(cm+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
-  const {error}=await sb.from('logs').insert({asset_id:aid,amount:amt,ticker,note,date:dateStr,year:cy,month:cm});
+  const {error}=await sb.from('logs').insert({username:currentUser,asset_id:aid,amount:amt,ticker,note,date:dateStr,year:cy,month:cm});
   if(error){showToast('เกิดข้อผิดพลาด');return;}
   showToast('บันทึกแล้ว ✓');
   closeModal('m-log');
@@ -423,16 +467,16 @@ function openBudget(){document.getElementById('b-val').value=S.budget;document.g
 async function saveBudget(){
   const v=parseInt(document.getElementById('b-val').value);
   if(!v||v<=0) return;
-  await sb.from('settings').upsert({id:'main',budget:v,stock_budget:S.stockBudget});
-  closeModal('m-budget'); await loadAll();
+  await sb.from('settings').upsert({id:currentUser,budget:v,stock_budget:S.stockBudget});
+  closeModal('m-budget');await loadAll();
 }
 
 function openStockBudget(){document.getElementById('sb-val').value=S.stockBudget;document.getElementById('m-stock-budget').classList.add('open');}
 async function saveStockBudget(){
   const v=parseInt(document.getElementById('sb-val').value);
   if(!v||v<=0) return;
-  await sb.from('settings').upsert({id:'main',budget:S.budget,stock_budget:v});
-  closeModal('m-stock-budget'); await loadAll();
+  await sb.from('settings').upsert({id:currentUser,budget:S.budget,stock_budget:v});
+  closeModal('m-stock-budget');await loadAll();
 }
 
 function openAddAsset(type){
@@ -460,15 +504,15 @@ async function saveAsset(){
   const goal=parseInt(document.getElementById('a-goal').value);
   if(!name||!goal||goal<=0) return;
   if(editAssetId){
-    await sb.from('assets').update({name,type,goal}).eq('id',editAssetId);
+    await sb.from('assets').update({name,type,goal}).eq('id',editAssetId).eq('username',currentUser);
   } else {
-    await sb.from('assets').insert({name,type,goal});
+    await sb.from('assets').insert({username:currentUser,name,type,goal});
   }
-  closeModal('m-asset'); await loadAll();
+  closeModal('m-asset');await loadAll();
 }
 async function delAsset(id){
   if(!confirm('ลบรายการนี้?')) return;
-  await sb.from('assets').delete().eq('id',id);
+  await sb.from('assets').delete().eq('id',id).eq('username',currentUser);
   await loadAll();
 }
 
@@ -477,7 +521,18 @@ document.querySelectorAll('.modal-backdrop').forEach(el=>{
   el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
 });
 
-loadAll();
+// Enter key on login
+document.getElementById('username-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// Auto login if saved
+const saved=localStorage.getItem('dca_user');
+if(saved){
+  currentUser=saved;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('user-label').textContent=saved;
+  loadAll();
+}
 </script>
 </body>
 </html>
