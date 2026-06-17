@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DCA Tracker">
+<title>DCA Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f7;min-height:100vh}
+.app{max-width:390px;margin:0 auto;padding-bottom:80px}
+.topbar{padding:1rem 1rem 0.5rem;display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;position:sticky;top:0;z-index:10}
+.topbar h1{font-size:19px;font-weight:600;color:#1c1c1e;display:flex;align-items:center;gap:8px}
+.nav-tabs{display:flex;border-bottom:0.5px solid #d1d1d6;margin:0 0 0.75rem;background:#f5f5f7;position:sticky;top:52px;z-index:10}
+.tab{flex:1;padding:0.6rem;text-align:center;font-size:13px;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#1c1c1e;font-weight:600;border-bottom:2px solid #1c1c1e}
+.month-nav{display:flex;align-items:center;gap:6px}
+.mnbtn{background:none;border:0.5px solid #c7c7cc;border-radius:8px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8e8e93;font-size:14px}
+.month-label{font-size:13px;font-weight:600;color:#1c1c1e;min-width:80px;text-align:center}
+.summary-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 1rem 0.75rem}
+.scard{background:#fff;border-radius:12px;padding:0.65rem 0.85rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.slabel{font-size:11px;color:#8e8e93;margin-bottom:3px}
+.sval{font-size:18px;font-weight:600;color:#1c1c1e}
+.sval.ok{color:#34c759}
+.sval.warn{color:#ff9500}
+.sec-title{font-size:11px;font-weight:600;color:#8e8e93;padding:0 1rem 0.4rem;text-transform:uppercase;letter-spacing:.06em}
+.acard{margin:0 1rem .6rem;background:#fff;border-radius:14px;padding:.9rem 1rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ahead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.aname{display:flex;align-items:center;gap:8px}
+.aicon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.aicon.stock{background:#e8f0fe}
+.aicon.fund{background:#e6f4ea}
+.aicon.gold{background:#fef3e2}
+.atitle{font-size:14px;font-weight:600;color:#1c1c1e}
+.asub{font-size:11px;color:#8e8e93}
+.badge-done{display:inline-flex;align-items:center;gap:3px;background:#e6f4ea;color:#34c759;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+.pbar-bg{height:6px;background:#f2f2f7;border-radius:99px;overflow:hidden;margin-bottom:6px}
+.pbar-fill{height:100%;border-radius:99px;transition:width .4s ease}
+.aamounts{display:flex;justify-content:space-between;font-size:11px;color:#8e8e93}
+.aamounts .done{color:#1c1c1e;font-weight:600}
+.log-mini-btn{margin-top:8px;background:none;border:.5px solid #c7c7cc;border-radius:10px;padding:.45rem .85rem;width:100%;font-size:12px;color:#8e8e93;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between}
+.add-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 1rem .6rem;background:none;border:.5px dashed #c7c7cc;border-radius:14px;padding:.7rem;width:calc(100% - 2rem);font-size:13px;color:#8e8e93;cursor:pointer}
+.log-row{margin:0 1rem .45rem;display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:.55rem .85rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ldot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+.empty{padding:.75rem 1rem;font-size:13px;color:#8e8e93}
+.budget-card{margin:0 1rem .75rem;background:#fff;border-radius:14px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.budget-row{display:flex;align-items:center;justify-content:space-between}
+.budget-label{font-size:14px;color:#1c1c1e;font-weight:600}
+.budget-sub{font-size:11px;color:#8e8e93;margin-top:2px}
+.budget-val{font-size:18px;font-weight:600;color:#1c1c1e}
+.budget-btn{background:none;border:.5px solid #c7c7cc;border-radius:8px;padding:3px 10px;font-size:12px;color:#8e8e93;cursor:pointer}
+.check-banner{margin:0 1rem .75rem;border-radius:10px;padding:.65rem .9rem;display:flex;align-items:center;gap:8px;font-size:13px}
+.check-banner.ok{background:#e6f4ea;color:#1a7f37}
+.check-banner.warn{background:#fff3e0;color:#b45309}
+.check-banner.over{background:#fde8e8;color:#c0392b}
+.set-card{margin:0 1rem .75rem;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;border-bottom:.5px solid #f2f2f7}
+.set-row:last-child{border-bottom:none}
+.set-name{font-size:13px;color:#1c1c1e;font-weight:600}
+.set-sub{font-size:11px;color:#8e8e93}
+.set-actions{display:flex;align-items:center;gap:4px}
+.set-goal{font-size:13px;font-weight:600;color:#1c1c1e;margin-right:4px}
+.edit-btn{background:none;border:.5px solid #c7c7cc;border-radius:8px;padding:2px 8px;font-size:11px;color:#8e8e93;cursor:pointer}
+.del-btn{background:none;border:none;color:#ff3b30;cursor:pointer;padding:3px 6px;font-size:13px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal-backdrop.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:1.25rem 1rem 2rem;width:100%;max-width:390px}
+.modal h3{font-size:16px;font-weight:600;color:#1c1c1e;margin-bottom:1rem}
+.modal label{font-size:12px;color:#8e8e93;display:block;margin-bottom:3px}
+.modal input,.modal select{width:100%;margin-bottom:.65rem;font-size:15px;padding:10px 12px;border:1px solid #d1d1d6;border-radius:10px;outline:none;background:#fff;color:#1c1c1e}
+.mactions{display:flex;gap:8px;margin-top:.25rem}
+.mactions button{flex:1;padding:.65rem;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-cancel{background:none;border:1px solid #d1d1d6;color:#8e8e93}
+.btn-ok{background:#007aff;border:none;color:#fff}
+.loading{display:flex;align-items:center;justify-content:center;padding:2rem;color:#8e8e93;font-size:14px;gap:8px}
+.spinner{width:18px;height:18px;border:2px solid #e5e5ea;border-top-color:#007aff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:8px 18px;border-radius:99px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>📈 DCA Tracker</h1>
+    <div class="month-nav" id="month-nav">
+      <button class="mnbtn" onclick="chMonth(-1)">‹</button>
+      <span class="month-label" id="mlabel"></span>
+      <button class="mnbtn" onclick="chMonth(1)">›</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <div class="tab active" onclick="showTab('home')">หน้าหลัก</div>
+    <div class="tab" onclick="showTab('log')">ประวัติ</div>
+    <div class="tab" onclick="showTab('settings')">ตั้งค่าแผน</div>
+  </div>
+
+  <div id="tab-home">
+    <div class="summary-row">
+      <div class="scard"><div class="slabel">ลงทุนแล้ว</div><div class="sval" id="s-inv">-</div></div>
+      <div class="scard"><div class="slabel">เป้ารวม/เดือน</div><div class="sval" id="s-goal">-</div></div>
+      <div class="scard"><div class="slabel">คงเหลือ</div><div class="sval warn" id="s-rem">-</div></div>
+      <div class="scard"><div class="slabel">ความคืบหน้า</div><div class="sval" id="s-pct">-</div></div>
+    </div>
+    <div class="sec-title">รายละเอียด</div>
+    <div id="assets-list"><div class="loading"><div class="spinner"></div> กำลังโหลด...</div></div>
+    <button class="add-btn" onclick="openLog(null)">＋ บันทึกการลงทุน</button>
+  </div>
+
+  <div id="tab-log" style="display:none">
+    <div class="sec-title" style="padding-top:.25rem">ประวัติเดือนนี้</div>
+    <div id="log-list"></div>
+  </div>
+
+  <div id="tab-settings" style="display:none">
+    <div class="sec-title" style="padding-top:.25rem">งบลงทุนรวมต่อเดือน</div>
+    <div class="budget-card">
+      <div class="budget-row">
+        <div><div class="budget-label">เป้าหมายรวม</div><div class="budget-sub">ยอดที่ต้องลงทุนให้ครบใน 1 เดือน</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="budget-val" id="budget-display">-</span>
+          <button class="budget-btn" onclick="openBudget()">✏️ แก้ไข</button>
+        </div>
+      </div>
+    </div>
+    <div id="check-banner"></div>
+    <div class="sec-title">หุ้นรายตัว (นับยอดรวมหมวด)</div>
+    <div class="budget-card" style="margin-bottom:.5rem">
+      <div class="budget-row">
+        <div><div class="budget-label">เป้าหมายหมวดหุ้น</div><div class="budget-sub">ซื้อตัวไหนก็ได้ นับยอดรวม</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="budget-val" id="stock-budget-display">-</span>
+          <button class="budget-btn" onclick="openStockBudget()">✏️ แก้ไข</button>
+        </div>
+      </div>
+    </div>
+    <div class="sec-title" style="margin-top:.5rem">กองทุนรวม (แยกรายตัว)</div>
+    <div class="set-card" id="fund-list"></div>
+    <button class="add-btn" onclick="openAddAsset('fund')">＋ เพิ่มกองทุน</button>
+    <div class="sec-title">ทองคำ</div>
+    <div class="set-card" id="gold-list"></div>
+    <button class="add-btn" onclick="openAddAsset('gold')">＋ เพิ่มทองคำ</button>
+  </div>
+</div>
+
+<!-- modals -->
+<div class="modal-backdrop" id="m-log">
+  <div class="modal">
+    <h3>บันทึกการลงทุน</h3>
+    <label>หมวด / กองทุน</label>
+    <select id="l-asset"></select>
+    <div id="ticker-wrap">
+      <label>ชื่อหุ้นที่ซื้อ</label>
+      <input type="text" id="l-ticker" placeholder="เช่น GOOGL, NVDA, TSMC">
+    </div>
+    <label>จำนวนเงิน (บาท)</label>
+    <input type="number" id="l-amount" placeholder="0" min="1">
+    <label>หมายเหตุ / แอพที่ใช้</label>
+    <input type="text" id="l-note" placeholder="เช่น TTBSC, Finnomena">
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal('m-log')">ยกเลิก</button>
+      <button class="btn-ok" onclick="saveLog()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="m-budget">
+  <div class="modal">
+    <h3>งบลงทุนรวมต่อเดือน</h3>
+    <label>ยอดรวมที่ต้องลงทุนให้ครบ (บาท)</label>
+    <input type="number" id="b-val" placeholder="0" min="1">
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal('m-budget')">ยกเลิก</button>
+      <button class="btn-ok" onclick="saveBudget()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="m-stock-budget">
+  <div class="modal">
+    <h3>เป้าหมายหมวดหุ้น</h3>
+    <label>ยอดรวมหุ้นรายตัวต่อเดือน (บาท)</label>
+    <input type="number" id="sb-val" placeholder="0" min="1">
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal('m-stock-budget')">ยกเลิก</button>
+      <button class="btn-ok" onclick="saveStockBudget()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="m-asset">
+  <div class="modal">
+    <h3 id="m-asset-title">เพิ่มกองทุน</h3>
+    <label>ชื่อ</label>
+    <input type="text" id="a-name" placeholder="เช่น S&P500, QQQ, SCHD">
+    <input type="hidden" id="a-type">
+    <label>เป้าต่อเดือน (บาท)</label>
+    <input type="number" id="a-goal" placeholder="0" min="1">
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal('m-asset')">ยกเลิก</button>
+      <button class="btn-ok" onclick="saveAsset()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://gmgtocqfuhjgnqgytfkq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZ3RvY3FmdWhqZ25xZ3l0ZmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NTU1MTAsImV4cCI6MjA5NzIzMTUxMH0.YUAtIrbfnEJQ-b-mFId4vni-bzByxo8KCcUqXU9mEkA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const ICONS={stock:'📈',fund:'🏦',gold:'🥇'};
+const TLAB={stock:'หุ้นรายตัว',fund:'กองทุนรวม',gold:'ทองคำ'};
+const BAR={stock:'#007aff',fund:'#34c759',gold:'#ff9500'};
+const DOTC={stock:'#007aff',fund:'#34c759',gold:'#ff9500'};
+
+const now=new Date();
+let cy=now.getFullYear(), cm=now.getMonth();
+let editAssetId=null;
+let S={budget:15000,stockBudget:5000,assets:[],logs:[]};
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+async function loadAll(){
+  const [{data:sets},{data:assets},{data:logs}] = await Promise.all([
+    sb.from('settings').select('*').eq('id','main').single(),
+    sb.from('assets').select('*').order('id'),
+    sb.from('logs').select('*').order('created_at',{ascending:false})
+  ]);
+  if(sets){S.budget=sets.budget;S.stockBudget=sets.stock_budget;}
+  S.assets=assets||[];
+  S.logs=logs||[];
+  render();
+}
+
+function investedStock(y,m){
+  return S.logs.filter(l=>l.asset_id==='stock'&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);
+}
+function invested(aid,y,m){
+  return S.logs.filter(l=>l.asset_id==aid&&l.year===y&&l.month===m).reduce((s,l)=>s+l.amount,0);
+}
+
+function renderCheck(){
+  const fundTotal=S.assets.filter(a=>a.type==='fund').reduce((s,a)=>s+a.goal,0);
+  const goldTotal=S.assets.filter(a=>a.type==='gold').reduce((s,a)=>s+a.goal,0);
+  const assigned=S.stockBudget+fundTotal+goldTotal;
+  const diff=S.budget-assigned;
+  const el=document.getElementById('check-banner');
+  let cls,icon,msg;
+  if(diff===0){cls='ok';icon='✅';msg=`ยอดรวมครบพอดี ฿${S.budget.toLocaleString()} 🎯`;}
+  else if(diff>0){cls='warn';icon='⚠️';msg=`ยังแบ่งไม่ครบ ขาดอีก ฿${diff.toLocaleString()} จากยอด ฿${S.budget.toLocaleString()}`;}
+  else{cls='over';icon='🚨';msg=`เกินงบ ฿${Math.abs(diff).toLocaleString()} — รวมแล้ว ฿${assigned.toLocaleString()}`;}
+  el.className=`check-banner ${cls}`;
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
+}
+
+function renderSetList(type,elId){
+  const el=document.getElementById(elId);
+  const items=S.assets.filter(a=>a.type===type);
+  if(!items.length){el.innerHTML='<div class="empty">ยังไม่มีรายการ</div>';return;}
+  el.innerHTML='';
+  items.forEach(a=>{
+    const d=document.createElement('div');
+    d.className='set-row';
+    d.innerHTML=`<div><div class="set-name">${a.name}</div><div class="set-sub">${TLAB[a.type]}</div></div>
+      <div class="set-actions">
+        <span class="set-goal">฿${a.goal.toLocaleString()}</span>
+        <button class="edit-btn" onclick="openEditAsset(${a.id})">แก้ไข</button>
+        <button class="del-btn" onclick="delAsset(${a.id})">🗑</button>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function renderSettings(){
+  document.getElementById('budget-display').textContent='฿'+S.budget.toLocaleString();
+  document.getElementById('stock-budget-display').textContent='฿'+S.stockBudget.toLocaleString();
+  renderSetList('fund','fund-list');
+  renderSetList('gold','gold-list');
+  renderCheck();
+}
+
+function renderHome(){
+  document.getElementById('mlabel').textContent=MTH[cm]+' '+cy;
+  const el=document.getElementById('assets-list');
+  el.innerHTML='';
+  let ti=0;
+
+  // หุ้นรายตัว
+  const stockInv=investedStock(cy,cm);
+  ti+=stockInv;
+  const spct=Math.min(Math.round(stockInv/S.stockBudget*100),100);
+  const sDone=stockInv>=S.stockBudget;
+  const stockLogs=S.logs.filter(l=>l.asset_id==='stock'&&l.year===cy&&l.month===cm);
+  const tickers=[...new Set(stockLogs.map(l=>l.ticker).filter(Boolean))].join(', ');
+  const sc=document.createElement('div');
+  sc.className='acard';
+  sc.innerHTML=`
+    <div class="ahead">
+      <div class="aname">
+        <div class="aicon stock">📈</div>
+        <div><div class="atitle">หุ้นรายตัว</div><div class="asub">${tickers||'ยังไม่มีรายการ'}</div></div>
+      </div>
+      ${sDone?`<span class="badge-done">✓ ครบ</span>`:`<span style="font-size:13px;color:#8e8e93">${spct}%</span>`}
+    </div>
+    <div class="pbar-bg"><div class="pbar-fill" style="width:${spct}%;background:${BAR.stock}"></div></div>
+    <div class="aamounts"><span class="done">฿${stockInv.toLocaleString()}</span><span>เป้า ฿${S.stockBudget.toLocaleString()}</span></div>
+    <button class="log-mini-btn" onclick="openLog('stock')"><span>＋ บันทึกการซื้อหุ้น</span><span>›</span></button>`;
+  el.appendChild(sc);
+
+  S.assets.forEach(a=>{
+    const inv=invested(a.id,cy,cm);
+    ti+=inv;
+    const pct=Math.min(Math.round(inv/a.goal*100),100);
+    const done=inv>=a.goal;
+    const d=document.createElement('div');
+    d.className='acard';
+    d.innerHTML=`
+      <div class="ahead">
+        <div class="aname">
+          <div class="aicon ${a.type}">${ICONS[a.type]}</div>
+          <div><div class="atitle">${a.name}</div><div class="asub">${TLAB[a.type]}</div></div>
+        </div>
+        ${done?`<span class="badge-done">✓ ครบ</span>`:`<span style="font-size:13px;color:#8e8e93">${pct}%</span>`}
+      </div>
+      <div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${BAR[a.type]}"></div></div>
+      <div class="aamounts"><span class="done">฿${inv.toLocaleString()}</span><span>เป้า ฿${a.goal.toLocaleString()}</span></div>
+      <button class="log-mini-btn" onclick="openLog(${a.id})"><span>＋ บันทึกการซื้อ</span><span>›</span></button>`;
+    el.appendChild(d);
+  });
+
+  document.getElementById('s-inv').textContent='฿'+ti.toLocaleString();
+  document.getElementById('s-goal').textContent='฿'+S.budget.toLocaleString();
+  const rem=Math.max(S.budget-ti,0);
+  document.getElementById('s-rem').textContent='฿'+rem.toLocaleString();
+  document.getElementById('s-rem').className='sval '+(ti>=S.budget?'ok':'warn');
+  document.getElementById('s-pct').textContent=Math.min(Math.round(ti/S.budget*100),100)+'%';
+}
+
+function renderLog(){
+  const el=document.getElementById('log-list');
+  el.innerHTML='';
+  const logs=S.logs.filter(l=>l.year===cy&&l.month===cm);
+  if(!logs.length){el.innerHTML='<div class="empty">ยังไม่มีประวัติเดือนนี้</div>';return;}
+  logs.forEach(l=>{
+    let aname,atype;
+    if(l.asset_id==='stock'){aname='หุ้นรายตัว';atype='stock';}
+    else{const a=S.assets.find(x=>x.id==l.asset_id)||{name:'?',type:'fund'};aname=a.name;atype=a.type;}
+    const d=document.createElement('div');
+    d.className='log-row';
+    d.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span class="ldot" style="background:${DOTC[atype]}"></span>
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:600;color:#1c1c1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${aname}${l.ticker?' · '+l.ticker:''}</div>
+          ${l.note?`<div style="font-size:11px;color:#8e8e93">${l.note}</div>`:''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:8px">
+        <div style="font-size:13px;font-weight:600;color:#1c1c1e">+฿${l.amount.toLocaleString()}</div>
+        <div style="font-size:11px;color:#8e8e93">${l.date.slice(5).replace('-','/')}</div>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function render(){renderHome();renderLog();renderSettings();}
+
+function showTab(t){
+  ['home','log','settings'].forEach(x=>{
+    document.getElementById('tab-'+x).style.display=x===t?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['home','log','settings'][i]===t);
+  });
+  document.getElementById('month-nav').style.visibility=t==='settings'?'hidden':'visible';
+}
+function chMonth(d){
+  cm+=d;
+  if(cm>11){cm=0;cy++;}if(cm<0){cm=11;cy--;}
+  render();
+}
+
+function openLog(aid){
+  const sel=document.getElementById('l-asset');
+  const opts=[{id:'stock',name:'หุ้นรายตัว'},...S.assets];
+  sel.innerHTML=opts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  if(aid!==null) sel.value=aid;
+  document.getElementById('l-ticker').value='';
+  document.getElementById('l-amount').value='';
+  document.getElementById('l-note').value='';
+  const isStock=String(aid)==='stock';
+  document.getElementById('ticker-wrap').style.display=isStock?'block':'none';
+  sel.onchange=()=>{document.getElementById('ticker-wrap').style.display=sel.value==='stock'?'block':'none';};
+  document.getElementById('m-log').classList.add('open');
+}
+
+async function saveLog(){
+  const aid=document.getElementById('l-asset').value;
+  const amt=parseInt(document.getElementById('l-amount').value);
+  if(!amt||amt<=0) return;
+  const ticker=document.getElementById('l-ticker').value.trim().toUpperCase();
+  const note=document.getElementById('l-note').value.trim();
+  const dd=new Date();
+  const dateStr=`${cy}-${String(cm+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+  const {error}=await sb.from('logs').insert({asset_id:aid,amount:amt,ticker,note,date:dateStr,year:cy,month:cm});
+  if(error){showToast('เกิดข้อผิดพลาด');return;}
+  showToast('บันทึกแล้ว ✓');
+  closeModal('m-log');
+  await loadAll();
+}
+
+function openBudget(){document.getElementById('b-val').value=S.budget;document.getElementById('m-budget').classList.add('open');}
+async function saveBudget(){
+  const v=parseInt(document.getElementById('b-val').value);
+  if(!v||v<=0) return;
+  await sb.from('settings').upsert({id:'main',budget:v,stock_budget:S.stockBudget});
+  closeModal('m-budget'); await loadAll();
+}
+
+function openStockBudget(){document.getElementById('sb-val').value=S.stockBudget;document.getElementById('m-stock-budget').classList.add('open');}
+async function saveStockBudget(){
+  const v=parseInt(document.getElementById('sb-val').value);
+  if(!v||v<=0) return;
+  await sb.from('settings').upsert({id:'main',budget:S.budget,stock_budget:v});
+  closeModal('m-stock-budget'); await loadAll();
+}
+
+function openAddAsset(type){
+  editAssetId=null;
+  document.getElementById('m-asset-title').textContent=type==='fund'?'เพิ่มกองทุน':'เพิ่มทองคำ';
+  document.getElementById('a-name').value='';
+  document.getElementById('a-goal').value='';
+  document.getElementById('a-type').value=type;
+  document.getElementById('a-name').placeholder=type==='fund'?'เช่น S&P500, QQQ, SCHD':'เช่น ทองคำแท่ง 96.5%';
+  document.getElementById('m-asset').classList.add('open');
+}
+function openEditAsset(id){
+  const a=S.assets.find(x=>x.id===id);
+  if(!a) return;
+  editAssetId=id;
+  document.getElementById('m-asset-title').textContent='แก้ไข '+a.name;
+  document.getElementById('a-name').value=a.name;
+  document.getElementById('a-type').value=a.type;
+  document.getElementById('a-goal').value=a.goal;
+  document.getElementById('m-asset').classList.add('open');
+}
+async function saveAsset(){
+  const name=document.getElementById('a-name').value.trim();
+  const type=document.getElementById('a-type').value;
+  const goal=parseInt(document.getElementById('a-goal').value);
+  if(!name||!goal||goal<=0) return;
+  if(editAssetId){
+    await sb.from('assets').update({name,type,goal}).eq('id',editAssetId);
+  } else {
+    await sb.from('assets').insert({name,type,goal});
+  }
+  closeModal('m-asset'); await loadAll();
+}
+async function delAsset(id){
+  if(!confirm('ลบรายการนี้?')) return;
+  await sb.from('assets').delete().eq('id',id);
+  await loadAll();
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-backdrop').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+
+loadAll();
+</script>
+</body>
+</html>
